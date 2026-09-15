@@ -84,6 +84,16 @@ class _CommunityViewState extends State<_CommunityView> {
     return Scaffold(
       appBar: AppBar(
         title: Text(vm.displayName),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: l10n.leaveCommunity,
+            onPressed: () async {
+              await vm.leave();
+              if (context.mounted) Navigator.of(context).pop();
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
