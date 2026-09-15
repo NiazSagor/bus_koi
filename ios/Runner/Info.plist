@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Bus Koi uses your location to share it with commuters waiting for the same bus, only while you choose to share.</string>
 </dict>
 </plist>

@@ -1,0 +1,89 @@
+{
+  "@@locale": "en",
+  "appTitle": "Bus Koi",
+  "homeTitle": "Where is your bus?",
+  "searchHint": "Search bus name...",
+  "activeCommunitiesLabel": "Active communities",
+  "noActiveCommunitiesYet": "No one is tracking a bus right now.",
+  "peopleWaiting": "{count, plural, =0{No one is waiting yet} =1{1 person is waiting} other{{count} people are waiting}}",
+  "@peopleWaiting": {
+    "placeholders": { "count": { "type": "num" } }
+  },
+  "joinCommunity": "Join Community",
+  "startCommunity": "Start a Community",
+  "noActiveCommunityFound": "No active community found.",
+  "passengerLocationUpdatedAgo": "Passenger location updated {time} ago",
+  "@passengerLocationUpdatedAgo": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "notifyMe": "Notify me",
+  "notifying": "Notifying",
+  "imOnThisBus": "I'm on this bus",
+  "confirmRidingTitle": "Are you currently riding {busName}?",
+  "@confirmRidingTitle": {
+    "placeholders": { "busName": { "type": "String" } }
+  },
+  "yesShareLocation": "Yes, share my location",
+  "cancel": "Cancel",
+  "helpingPeopleFindBus": "You're helping {count} people find {busName}.",
+  "@helpingPeopleFindBus": {
+    "placeholders": { "count": { "type": "num" }, "busName": { "type": "String" } }
+  },
+  "peopleWaitingForThisBus": "{count} people are waiting for this bus.",
+  "@peopleWaitingForThisBus": {
+    "placeholders": { "count": { "type": "num" } }
+  },
+  "yourLocationCouldHelp": "Your location could help them.",
+  "shareMyLocation": "Share my location",
+  "stopSharing": "Stop sharing",
+  "passengersSharing": "{count} passengers sharing location",
+  "@passengersSharing": {
+    "placeholders": { "count": { "type": "num" } }
+  },
+  "locationSharingEnded": "Location sharing ended",
+  "lastReportedAgo": "Last reported {time} ago",
+  "@lastReportedAgo": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "notificationTitle": "{busName} location updated",
+  "@notificationTitle": {
+    "placeholders": { "busName": { "type": "String" } }
+  },
+  "notificationBody": "A passenger just reported the bus location.",
+  "offlineMessage": "You're offline. Reconnect to see live updates.",
+  "locationPermissionDenied": "Location access is needed to share your location with other commuters.",
+  "gpsUnavailable": "We couldn't get an accurate location.",
+  "communityExpired": "This community is no longer active.",
+  "startAgain": "Start again",
+  "nobodyLookingForBus": "Nobody is currently looking for this bus.",
+  "noLocationSupplierYet": "Waiting for someone on the bus.",
+  "leaveCommunity": "Leave Community",
+  "settings": "Settings",
+  "language": "Language",
+  "english": "English",
+  "bengali": "বাংলা",
+  "systemDefault": "Follow system",
+  "privacyInfoTitle": "Privacy",
+  "privacyInfoBody": "We only store the latest reported location for a bus, never your identity or movement history. Location sharing is always voluntary and stops automatically when you leave or stop sharing.",
+  "about": "About",
+  "aboutBody": "Bus Koi connects commuters waiting for a local bus with commuters currently riding it. Communities are temporary and disappear when nobody needs them.",
+  "search": "Search",
+  "retry": "Retry",
+  "you": "You",
+  "waitingRole": "Waiting",
+  "supplierRole": "On the bus",
+  "grantLocationPermission": "Allow location access",
+  "justNow": "just now",
+  "secondsAgo": "{seconds}s ago",
+  "@secondsAgo": {
+    "placeholders": { "seconds": { "type": "num" } }
+  },
+  "minutesAgo": "{minutes}m ago",
+  "@minutesAgo": {
+    "placeholders": { "minutes": { "type": "num" } }
+  },
+  "hoursAgo": "{hours}h ago",
+  "@hoursAgo": {
+    "placeholders": { "hours": { "type": "num" } }
+  }
+}

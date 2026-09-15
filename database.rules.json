@@ -1,0 +1,29 @@
+{
+  "rules": {
+    "communities": {
+      ".read": "auth != null",
+      "$communityId": {
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['displayName', 'normalizedName', 'status', 'createdAt', 'lastActiveAt'])"
+      }
+    },
+    "communityMembers": {
+      "$communityId": {
+        ".read": "auth != null",
+        "$userId": {
+          ".write": "auth != null && auth.uid == $userId",
+          ".validate": "newData.hasChildren(['role', 'joinedAt', 'lastSeenAt'])"
+        }
+      }
+    },
+    "locationReports": {
+      "$communityId": {
+        ".read": "auth != null",
+        "$supplierId": {
+          ".write": "auth != null && auth.uid == $supplierId",
+          ".validate": "newData.hasChildren(['latitude', 'longitude', 'accuracy', 'reportedAt'])"
+        }
+      }
+    }
+  }
+}

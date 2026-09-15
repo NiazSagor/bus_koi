@@ -1,0 +1,89 @@
+{
+  "@@locale": "bn",
+  "appTitle": "বাস কই",
+  "homeTitle": "আপনার বাস কোথায়?",
+  "searchHint": "বাসের নাম লিখুন...",
+  "activeCommunitiesLabel": "চালু আছে এমন বাস",
+  "noActiveCommunitiesYet": "এখন কেউ কোনো বাস খুঁজছেন না।",
+  "peopleWaiting": "{count, plural, =0{এখনো কেউ অপেক্ষা করছেন না} =1{১ জন অপেক্ষা করছেন} other{{count} জন অপেক্ষা করছেন}}",
+  "@peopleWaiting": {
+    "placeholders": { "count": { "type": "num" } }
+  },
+  "joinCommunity": "যোগ দিন",
+  "startCommunity": "নতুন করে শুরু করুন",
+  "noActiveCommunityFound": "এই মুহূর্তে কোনো সক্রিয় গ্রুপ নেই।",
+  "passengerLocationUpdatedAgo": "{time} আগে যাত্রীর পাঠানো অবস্থান আপডেট হয়েছে",
+  "@passengerLocationUpdatedAgo": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "notifyMe": "আমাকে জানাবেন",
+  "notifying": "জানানো হবে",
+  "imOnThisBus": "আমি এই বাসে আছি",
+  "confirmRidingTitle": "আপনি কি এখন {busName} বাসে আছেন?",
+  "@confirmRidingTitle": {
+    "placeholders": { "busName": { "type": "String" } }
+  },
+  "yesShareLocation": "হ্যাঁ, আমার অবস্থান শেয়ার করুন",
+  "cancel": "বাতিল",
+  "helpingPeopleFindBus": "আপনি {count} জনকে {busName} খুঁজে পেতে সাহায্য করছেন।",
+  "@helpingPeopleFindBus": {
+    "placeholders": { "count": { "type": "num" }, "busName": { "type": "String" } }
+  },
+  "peopleWaitingForThisBus": "{count} জন এই বাসের জন্য অপেক্ষা করছেন।",
+  "@peopleWaitingForThisBus": {
+    "placeholders": { "count": { "type": "num" } }
+  },
+  "yourLocationCouldHelp": "আপনার অবস্থান তাদের সাহায্য করতে পারে।",
+  "shareMyLocation": "আমার অবস্থান শেয়ার করুন",
+  "stopSharing": "শেয়ার করা বন্ধ করুন",
+  "passengersSharing": "{count} জন যাত্রী অবস্থান শেয়ার করছেন",
+  "@passengersSharing": {
+    "placeholders": { "count": { "type": "num" } }
+  },
+  "locationSharingEnded": "অবস্থান শেয়ার করা শেষ হয়েছে",
+  "lastReportedAgo": "সর্বশেষ {time} আগে জানানো হয়েছে",
+  "@lastReportedAgo": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "notificationTitle": "{busName}-এর অবস্থান আপডেট হয়েছে",
+  "@notificationTitle": {
+    "placeholders": { "busName": { "type": "String" } }
+  },
+  "notificationBody": "একজন যাত্রী বাসটির অবস্থান শেয়ার করেছেন।",
+  "offlineMessage": "আপনি অফলাইনে আছেন। লাইভ আপডেট দেখতে সংযোগ পুনরায় স্থাপন করুন।",
+  "locationPermissionDenied": "অন্য যাত্রীদের সাথে অবস্থান শেয়ার করতে লোকেশন অনুমতি প্রয়োজন।",
+  "gpsUnavailable": "আমরা সঠিক অবস্থান শনাক্ত করতে পারিনি।",
+  "communityExpired": "এই গ্রুপটি আর সক্রিয় নেই।",
+  "startAgain": "আবার শুরু করুন",
+  "nobodyLookingForBus": "এই মুহূর্তে কেউ এই বাস খুঁজছেন না।",
+  "noLocationSupplierYet": "বাসে থাকা কারো জন্য অপেক্ষা করা হচ্ছে।",
+  "leaveCommunity": "গ্রুপ ত্যাগ করুন",
+  "settings": "সেটিংস",
+  "language": "ভাষা",
+  "english": "English",
+  "bengali": "বাংলা",
+  "systemDefault": "ডিভাইসের ভাষা অনুসরণ করুন",
+  "privacyInfoTitle": "গোপনীয়তা",
+  "privacyInfoBody": "আমরা শুধু একটি বাসের সর্বশেষ জানানো অবস্থান সংরক্ষণ করি, আপনার পরিচয় বা চলাচলের ইতিহাস নয়। অবস্থান শেয়ার করা সম্পূর্ণ ঐচ্ছিক এবং আপনি ত্যাগ করলে বা শেয়ার বন্ধ করলে তা স্বয়ংক্রিয়ভাবে বন্ধ হয়ে যায়।",
+  "about": "অ্যাপ সম্পর্কে",
+  "aboutBody": "বাস কই এমন যাত্রীদের সংযুক্ত করে যারা একটি লোকাল বাসের জন্য অপেক্ষা করছেন তাদের সাথে যারা এই মুহূর্তে সেই বাসে আছেন। গ্রুপগুলো সাময়িক এবং প্রয়োজন ফুরিয়ে গেলে নিজে থেকেই মুছে যায়।",
+  "search": "খুঁজুন",
+  "retry": "আবার চেষ্টা করুন",
+  "you": "আপনি",
+  "waitingRole": "অপেক্ষমাণ",
+  "supplierRole": "বাসে আছেন",
+  "grantLocationPermission": "লোকেশন অনুমতি দিন",
+  "justNow": "এইমাত্র",
+  "secondsAgo": "{seconds} সেকেন্ড আগে",
+  "@secondsAgo": {
+    "placeholders": { "seconds": { "type": "num" } }
+  },
+  "minutesAgo": "{minutes} মিনিট আগে",
+  "@minutesAgo": {
+    "placeholders": { "minutes": { "type": "num" } }
+  },
+  "hoursAgo": "{hours} ঘণ্টা আগে",
+  "@hoursAgo": {
+    "placeholders": { "hours": { "type": "num" } }
+  }
+}
