@@ -40,9 +40,8 @@ dependencies:
   # State management
   provider: ^6.1.2
 
-  # Backend (Firebase)
+  # Backend (Firebase) — no auth: identity is a locally-generated id only.
   firebase_core: ^3.6.0
-  firebase_auth: ^5.3.1
   firebase_database: ^11.1.4
 
   # Map + location

@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -40,7 +39,7 @@ class BusKoiApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: localeProvider),
-        Provider<IdentityService>(create: (_) => IdentityService(FirebaseAuth.instance)),
+        Provider<IdentityService>(create: (_) => IdentityService()),
         Provider<CommunityRepository>(create: (_) => CommunityRepository()),
         Provider<LocationService>(create: (_) => LocationService()),
         Provider<ConnectivityService>(create: (_) => ConnectivityService()),

@@ -1,26 +1,24 @@
 {
   "rules": {
+    ".read": true,
     "communities": {
-      ".read": "auth != null",
+      ".write": true,
       "$communityId": {
-        ".write": "auth != null",
         ".validate": "newData.hasChildren(['displayName', 'normalizedName', 'status', 'createdAt', 'lastActiveAt'])"
       }
     },
     "communityMembers": {
+      ".write": true,
       "$communityId": {
-        ".read": "auth != null",
         "$userId": {
-          ".write": "auth != null && auth.uid == $userId",
           ".validate": "newData.hasChildren(['role', 'joinedAt', 'lastSeenAt'])"
         }
       }
     },
     "locationReports": {
+      ".write": true,
       "$communityId": {
-        ".read": "auth != null",
         "$supplierId": {
-          ".write": "auth != null && auth.uid == $supplierId",
           ".validate": "newData.hasChildren(['latitude', 'longitude', 'accuracy', 'reportedAt'])"
         }
       }

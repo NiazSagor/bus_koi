@@ -1,23 +1,28 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
-/// Frictionless anonymous identity. No profile, no email, no password.
-/// The uid from Firebase Anonymous Auth is the only identifier used
-/// anywhere in the data model, and it is never shown to other users.
+/// Frictionless anonymous identity. No login, no profile, no backend
+/// account of any kind. Just a random id generated once on-device and
+/// cached locally — it is never shown to other users.
 class IdentityService {
-  IdentityService(this._auth);
+  static const _prefsKey = 'anonymous_user_id';
+  static const _uuid = Uuid();
 
-  final FirebaseAuth _auth;
+  String? _cachedUserId;
 
-  String? get currentUserId => _auth.currentUser?.uid;
+  String? get currentUserId => _cachedUserId;
 
   Future<String> ensureSignedIn() async {
-    final existing = _auth.currentUser;
-    if (existing != null) return existing.uid;
-    final credential = await _auth.signInAnonymously();
-    final uid = credential.user?.uid;
-    if (uid == null) {
-      throw StateError('Anonymous sign-in did not return a user id.');
+    final existing = _cachedUserId;
+    if (existing != null) return existing;
+
+    final prefs = await SharedPreferences.getInstance();
+    var id = prefs.getString(_prefsKey);
+    if (id == null) {
+      id = _uuid.v4();
+      await prefs.setString(_prefsKey, id);
     }
-    return uid;
+    _cachedUserId = id;
+    return id;
   }
 }
