@@ -1,0 +1,55 @@
+appId: com.byteutility.dev.buskoi.bus_koi
+---
+# End-to-end smoke test against the mock data seeded in MockCommunityRepository
+# (see lib/features/community/data/mock_community_repository.dart). Run with:
+#   maestro test .maestro/ride_along_flow.yaml
+# Requires: a booted emulator/simulator with the app already installed, and
+# ACCESS_FINE_LOCATION / ACCESS_COARSE_LOCATION pre-granted (or you'll need to
+# handle the OS permission dialog interactively):
+#   adb shell pm grant com.byteutility.dev.buskoi.bus_koi android.permission.ACCESS_FINE_LOCATION
+#   adb shell pm grant com.byteutility.dev.buskoi.bus_koi android.permission.ACCESS_COARSE_LOCATION
+#   adb emu geo fix 90.4266 23.7925
+
+- launchApp:
+    clearState: true
+- assertVisible: "Active communities"
+
+# Join a seeded community that already has a live supplier. Semantics nodes
+# combine multiple lines into one accessibility string (Flutter merges
+# Column-of-Text into a single a11y node), and Maestro's `text:` matcher
+# requires a full-string match — so wildcards are needed around any text
+# that shares a node with other content.
+- tapOn:
+    text: "৮ নম্বর.*"
+- assertVisible: "৮ নম্বর"
+- assertVisible:
+    text: ".*7 people are waiting.*"
+
+# Notify-me toggle (shows a transient SnackBar reading "Notifying" — the
+# button label itself never changes). The SnackBar is floating and sits
+# directly over the action bar for its ~4s default duration, swallowing taps
+# on the buttons beneath it — wait for it to fully disappear, not just for
+# its show/hide animation, before tapping anything below it.
+- tapOn: "Notify me"
+- assertVisible: "Notifying"
+- extendedWaitUntil:
+    notVisible: "Notifying"
+    timeout: 6000
+
+# Become a supplier: confirm dialog, then share location.
+- tapOn: "I'm on this bus"
+- waitForAnimationToEnd
+- assertVisible:
+    text: ".*Are you currently riding.*"
+- tapOn: "Yes, share my location"
+- assertVisible:
+    text: ".*2 passengers sharing location.*"
+- assertVisible: "Stop sharing"
+
+# Stop sharing and leave; counts should settle back to the seeded baseline.
+- tapOn: "Stop sharing"
+- assertVisible: "I'm on this bus"
+- tapOn: "Leave Community"
+- assertVisible: "Active communities"
+- assertVisible:
+    text: ".*৮ নম্বর.*7 people are waiting.*"
