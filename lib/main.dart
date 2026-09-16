@@ -9,18 +9,27 @@ import 'package:bus_koi/core/services/identity_service.dart';
 import 'package:bus_koi/core/services/location_service.dart';
 import 'package:bus_koi/core/theme/app_theme.dart';
 import 'package:bus_koi/features/community/data/community_repository.dart';
+import 'package:bus_koi/features/community/data/mock_community_repository.dart';
 import 'package:bus_koi/features/settings/presentation/locale_provider.dart';
 import 'package:bus_koi/firebase_options.dart';
+
+/// Flip to false once `flutterfire configure` has wired up a real Firebase
+/// project. While true, the app runs entirely on in-memory seeded data
+/// (see [MockCommunityRepository]) so the UI can be reviewed without a
+/// backend.
+const bool kUseMockData = true;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  } catch (_) {
-    // Firebase isn't configured yet (placeholder firebase_options.dart).
-    // The app still boots so the UI can be reviewed; run
-    // `flutterfire configure` before testing real data flows.
+  if (!kUseMockData) {
+    try {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    } catch (_) {
+      // Firebase isn't configured yet (placeholder firebase_options.dart).
+      // The app still boots so the UI can be reviewed; run
+      // `flutterfire configure` before testing real data flows.
+    }
   }
 
   final localeProvider = LocaleProvider();
@@ -40,7 +49,13 @@ class BusKoiApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider.value(value: localeProvider),
         Provider<IdentityService>(create: (_) => IdentityService()),
-        Provider<CommunityRepository>(create: (_) => CommunityRepository()),
+        Provider<CommunityRepository>(
+          create: (_) =>
+              kUseMockData ? MockCommunityRepository() : FirebaseCommunityRepository(),
+          dispose: (_, repo) {
+            if (repo is MockCommunityRepository) repo.dispose();
+          },
+        ),
         Provider<LocationService>(create: (_) => LocationService()),
         Provider<ConnectivityService>(create: (_) => ConnectivityService()),
       ],

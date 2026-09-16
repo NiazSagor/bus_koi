@@ -7,12 +7,72 @@ import 'package:bus_koi/shared/models/community.dart';
 import 'package:bus_koi/shared/models/community_member.dart';
 import 'package:bus_koi/shared/models/location_report.dart';
 
+/// Everything above the data layer (view models, screens) talks in terms of
+/// this interface and the plain [Community]/[CommunityMember]/
+/// [LocationReport] models, never Firebase types directly. See
+/// [FirebaseCommunityRepository] for the real backend and
+/// `mock_community_repository.dart` for the in-memory stand-in used before
+/// a Firebase project is configured.
+abstract class CommunityRepository {
+  // --- Search / discovery ---
+
+  /// Active communities, most recently active first. Used for home-screen
+  /// suggestions — there is no permanent bus list, only what is live now.
+  Stream<List<Community>> watchActiveCommunities();
+
+  Future<Community?> findActiveByNormalizedName(String normalizedName);
+
+  // --- Create / join / leave ---
+
+  Future<Community> createCommunity(String displayName);
+
+  Future<void> joinCommunity({
+    required String communityId,
+    required String userId,
+    MemberRole role = MemberRole.waiting,
+  });
+
+  Future<void> leaveCommunity({
+    required String communityId,
+    required String userId,
+  });
+
+  Future<void> sendHeartbeat({
+    required String communityId,
+    required String userId,
+  });
+
+  Future<void> setRole({
+    required String communityId,
+    required String userId,
+    required MemberRole role,
+  });
+
+  // --- Members / presence ---
+
+  Stream<List<CommunityMember>> watchMembers(String communityId);
+
+  // --- Location reports (supplier side) ---
+
+  Future<void> submitLocationReport({
+    required String communityId,
+    required String supplierId,
+    required double latitude,
+    required double longitude,
+    required double accuracy,
+  });
+
+  Future<void> stopSharing({
+    required String communityId,
+    required String supplierId,
+  });
+
+  Stream<List<LocationReport>> watchLocationReports(String communityId);
+}
+
 /// The only piece of the app that knows about Firebase Realtime Database.
-/// Everything above this talks in terms of [Community]/[CommunityMember]/
-/// [LocationReport], so the backend could be swapped later without
-/// touching UI or view-model code.
-class CommunityRepository {
-  CommunityRepository({FirebaseDatabase? database})
+class FirebaseCommunityRepository implements CommunityRepository {
+  FirebaseCommunityRepository({FirebaseDatabase? database})
       : _db = database ?? FirebaseDatabase.instance;
 
   final FirebaseDatabase _db;
@@ -23,10 +83,7 @@ class CommunityRepository {
   DatabaseReference get _members => _db.ref(AppConstants.membersPath);
   DatabaseReference get _reports => _db.ref(AppConstants.locationReportsPath);
 
-  // --- Search / discovery ---
-
-  /// Active communities, most recently active first. Used for home-screen
-  /// suggestions — there is no permanent bus list, only what is live now.
+  @override
   Stream<List<Community>> watchActiveCommunities() {
     final query = _communities
         .orderByChild('status')
@@ -42,6 +99,7 @@ class CommunityRepository {
     });
   }
 
+  @override
   Future<Community?> findActiveByNormalizedName(String normalizedName) async {
     final query = _communities
         .orderByChild('normalizedName')
@@ -56,8 +114,7 @@ class CommunityRepository {
     return null;
   }
 
-  // --- Create / join / leave ---
-
+  @override
   Future<Community> createCommunity(String displayName) async {
     final normalized = NameNormalizer.normalize(displayName);
     final existing = await findActiveByNormalizedName(normalized);
@@ -77,6 +134,7 @@ class CommunityRepository {
     return community;
   }
 
+  @override
   Future<void> joinCommunity({
     required String communityId,
     required String userId,
@@ -102,6 +160,7 @@ class CommunityRepository {
     }
   }
 
+  @override
   Future<void> leaveCommunity({
     required String communityId,
     required String userId,
@@ -120,6 +179,7 @@ class CommunityRepository {
     }
   }
 
+  @override
   Future<void> sendHeartbeat({
     required String communityId,
     required String userId,
@@ -131,6 +191,7 @@ class CommunityRepository {
         .set(DateTime.now().millisecondsSinceEpoch);
   }
 
+  @override
   Future<void> setRole({
     required String communityId,
     required String userId,
@@ -150,8 +211,7 @@ class CommunityRepository {
     });
   }
 
-  // --- Members / presence ---
-
+  @override
   Stream<List<CommunityMember>> watchMembers(String communityId) {
     return _members.child(communityId).onValue.map((event) {
       final raw = event.snapshot.value;
@@ -163,8 +223,7 @@ class CommunityRepository {
     });
   }
 
-  // --- Location reports (supplier side) ---
-
+  @override
   Future<void> submitLocationReport({
     required String communityId,
     required String supplierId,
@@ -184,6 +243,7 @@ class CommunityRepository {
     await _touchCommunity(communityId);
   }
 
+  @override
   Future<void> stopSharing({
     required String communityId,
     required String supplierId,
@@ -196,6 +256,7 @@ class CommunityRepository {
     );
   }
 
+  @override
   Stream<List<LocationReport>> watchLocationReports(String communityId) {
     return _reports.child(communityId).onValue.map((event) {
       final raw = event.snapshot.value;
