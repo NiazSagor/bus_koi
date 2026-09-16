@@ -23,6 +23,11 @@ class AppConstants {
   static const int maxSearchSuggestions = 10;
   static const int minSearchLength = 1;
 
+  // --- Map ---
+  static const double mapMinZoom = 4;
+  static const double mapMaxZoom = 19;
+  static const double mapZoomStep = 1;
+
   // --- Firebase Realtime Database paths ---
   static const String communitiesPath = 'communities';
   static const String membersPath = 'communityMembers';

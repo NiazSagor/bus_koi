@@ -80,10 +80,18 @@ movement history is ever stored, by design (see `prompt.md` §15).
 
 ### Config placeholders
 
-`lib/firebase_options.dart` and the Google Maps API keys (`android/app/src/main/AndroidManifest.xml`,
-`ios/Runner/AppDelegate.swift`) are TODO placeholders. Without a real Firebase project wired in via
-`flutterfire configure`, the app builds and runs but RTDB reads/writes fail (caught, non-fatal) and the
-map renders blank/grey.
+`lib/firebase_options.dart` is a TODO placeholder. Without a real Firebase project wired in via
+`flutterfire configure`, RTDB reads/writes fail (caught, non-fatal). See `kUseMockData` in `main.dart`
+below — an in-memory mock repository lets the app be reviewed with seeded, "live" data before Firebase
+is configured at all.
+
+### Map: flutter_map + OpenStreetMap, not Google Maps
+
+The map on the community screen (`lib/features/community/presentation/community_screen.dart`) uses
+`flutter_map` with public OpenStreetMap tiles — chosen over `google_maps_flutter` specifically to avoid
+requiring a Google Cloud billing account/API key for an MVP. No API key or config needed; it renders
+out of the box. The public OSM tile server has a fair-use policy, fine for dev/demo, but a paid tile
+provider (MapTiler, Stadia Maps, etc.) should replace it before any real production traffic.
 
 ### Localization
 

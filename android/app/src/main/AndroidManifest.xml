@@ -7,10 +7,6 @@
         android:label="bus_koi"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
-        <!-- TODO: replace with a real Google Maps API key restricted to this app -->
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="TODO-REPLACE-WITH-GOOGLE-MAPS-API-KEY"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

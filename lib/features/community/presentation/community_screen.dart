@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
+import 'package:bus_koi/core/constants/app_constants.dart';
 import 'package:bus_koi/core/localization/gen/app_localizations.dart';
 import 'package:bus_koi/core/services/connectivity_service.dart';
 import 'package:bus_koi/core/services/identity_service.dart';
@@ -48,8 +50,8 @@ class _CommunityView extends StatefulWidget {
 class _CommunityViewState extends State<_CommunityView> {
   bool _notifyMeEnabled = false;
   int _lastNotifiedReportCount = 0;
-  GoogleMapController? _mapController;
-  LocationReport? _lastCameraReport;
+  final MapController _mapController = MapController();
+  bool _hasCenteredOnSupplier = false;
 
   @override
   Widget build(BuildContext context) {
@@ -71,13 +73,14 @@ class _CommunityViewState extends State<_CommunityView> {
       _lastNotifiedReportCount = vm.locationReports.length;
     }
 
+    // Center on the bus once, the first time a location report arrives, then
+    // leave the camera alone so the user can freely pan/zoom — don't fight
+    // their gesture every time a new report comes in.
     final latest = vm.latestReport;
-    if (latest != null && latest != _lastCameraReport) {
-      _lastCameraReport = latest;
+    if (latest != null && !_hasCenteredOnSupplier) {
+      _hasCenteredOnSupplier = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _mapController?.animateCamera(
-          CameraUpdate.newLatLng(LatLng(latest.latitude, latest.longitude)),
-        );
+        _mapController.move(LatLng(latest.latitude, latest.longitude), _mapController.camera.zoom);
       });
     }
 
@@ -103,7 +106,7 @@ class _CommunityViewState extends State<_CommunityView> {
               children: [
                 _MapArea(
                   latestReport: vm.latestReport,
-                  onMapCreated: (c) => _mapController = c,
+                  mapController: _mapController,
                 ),
                 Positioned(
                   left: 12,
@@ -113,6 +116,17 @@ class _CommunityViewState extends State<_CommunityView> {
                     waitingCount: vm.waitingCount,
                     supplierCount: vm.supplierCount,
                     latestReport: vm.latestReport,
+                  ),
+                ),
+                Positioned(
+                  right: 12,
+                  bottom: 12,
+                  child: _MapControls(
+                    onZoomIn: () => _zoomBy(AppConstants.mapZoomStep),
+                    onZoomOut: () => _zoomBy(-AppConstants.mapZoomStep),
+                    onRecenter: vm.latestReport == null
+                        ? null
+                        : () => _recenterOn(vm.latestReport!),
                   ),
                 ),
               ],
@@ -134,6 +148,22 @@ class _CommunityViewState extends State<_CommunityView> {
           ),
         ],
       ),
+    );
+  }
+
+  void _zoomBy(double delta) {
+    final camera = _mapController.camera;
+    final newZoom = (camera.zoom + delta).clamp(
+      AppConstants.mapMinZoom,
+      AppConstants.mapMaxZoom,
+    );
+    _mapController.move(camera.center, newZoom);
+  }
+
+  void _recenterOn(LocationReport report) {
+    _mapController.move(
+      LatLng(report.latitude, report.longitude),
+      _mapController.camera.zoom,
     );
   }
 
@@ -176,6 +206,7 @@ class _CommunityViewState extends State<_CommunityView> {
   @override
   void dispose() {
     context.read<CommunityViewModel>().leave();
+    _mapController.dispose();
     super.dispose();
   }
 }
@@ -206,10 +237,10 @@ class _OfflineBanner extends StatelessWidget {
 }
 
 class _MapArea extends StatelessWidget {
-  const _MapArea({required this.latestReport, required this.onMapCreated});
+  const _MapArea({required this.latestReport, required this.mapController});
 
   final LocationReport? latestReport;
-  final ValueChanged<GoogleMapController> onMapCreated;
+  final MapController mapController;
 
   static const _dhakaFallback = LatLng(23.8103, 90.4125);
 
@@ -219,34 +250,93 @@ class _MapArea extends StatelessWidget {
         ? LatLng(latestReport!.latitude, latestReport!.longitude)
         : _dhakaFallback;
 
-    return GoogleMap(
-      onMapCreated: onMapCreated,
-      initialCameraPosition: CameraPosition(target: target, zoom: 15),
-      myLocationButtonEnabled: false,
-      zoomControlsEnabled: false,
-      markers: latestReport == null
-          ? {}
-          : {
+    return FlutterMap(
+      mapController: mapController,
+      options: MapOptions(
+        initialCenter: target,
+        initialZoom: 15,
+        minZoom: AppConstants.mapMinZoom,
+        maxZoom: AppConstants.mapMaxZoom,
+        interactionOptions: const InteractionOptions(
+          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+        ),
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.byteutility.dev.buskoi.bus_koi',
+        ),
+        if (latestReport != null)
+          CircleLayer(
+            circles: [
+              CircleMarker(
+                point: target,
+                radius: latestReport!.accuracy,
+                useRadiusInMeter: true,
+                color: AppTheme.supplierBlue.withValues(alpha: 0.12),
+                borderColor: AppTheme.supplierBlue.withValues(alpha: 0.4),
+                borderStrokeWidth: 1,
+              ),
+            ],
+          ),
+        if (latestReport != null)
+          MarkerLayer(
+            markers: [
               Marker(
-                markerId: const MarkerId('latest-report'),
-                position: target,
-                infoWindow: InfoWindow(
-                  title: 'Passenger reported location',
+                point: target,
+                width: 36,
+                height: 36,
+                child: const Icon(
+                  Icons.directions_bus,
+                  color: AppTheme.supplierBlue,
+                  size: 32,
                 ),
               ),
-            },
-      circles: latestReport == null
-          ? {}
-          : {
-              Circle(
-                circleId: const CircleId('accuracy'),
-                center: target,
-                radius: latestReport!.accuracy,
-                fillColor: AppTheme.supplierBlue.withValues(alpha: 0.12),
-                strokeColor: AppTheme.supplierBlue.withValues(alpha: 0.4),
-                strokeWidth: 1,
-              ),
-            },
+            ],
+          ),
+      ],
+    );
+  }
+}
+
+class _MapControls extends StatelessWidget {
+  const _MapControls({
+    required this.onZoomIn,
+    required this.onZoomOut,
+    required this.onRecenter,
+  });
+
+  final VoidCallback onZoomIn;
+  final VoidCallback onZoomOut;
+  final VoidCallback? onRecenter;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FloatingActionButton.small(
+          heroTag: 'mapRecenter',
+          tooltip: l10n.recenterOnBus,
+          onPressed: onRecenter,
+          child: const Icon(Icons.my_location),
+        ),
+        const SizedBox(height: 8),
+        FloatingActionButton.small(
+          heroTag: 'mapZoomIn',
+          tooltip: l10n.zoomIn,
+          onPressed: onZoomIn,
+          child: const Icon(Icons.add),
+        ),
+        const SizedBox(height: 8),
+        FloatingActionButton.small(
+          heroTag: 'mapZoomOut',
+          tooltip: l10n.zoomOut,
+          onPressed: onZoomOut,
+          child: const Icon(Icons.remove),
+        ),
+      ],
     );
   }
 }
