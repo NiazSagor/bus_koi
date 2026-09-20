@@ -22,6 +22,9 @@ truth for *what* the app should do.
 - Run a single test file: `flutter test test/widget_test.dart`
 - List devices: `flutter devices`
 - Run on a specific device: `flutter run -d <device-id>`
+- Run the E2E smoke flow (against `kUseMockData`'s seeded data, on a booted emulator/simulator with the
+  app installed): `maestro test .maestro/ride_along_flow.yaml` — see comments in that file for required
+  location-permission/geo setup via `adb`.
 
 ### JDK gotcha
 

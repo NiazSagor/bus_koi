@@ -84,9 +84,35 @@ class _CommunityViewState extends State<_CommunityView> {
       });
     }
 
+    final isSharing = vm.sharePhase == LocationSharePhase.sharing;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(vm.displayName),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.circle,
+              size: 10,
+              color: isSharing ? AppTheme.supplierBlue : AppTheme.demandGreen,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(vm.displayName, overflow: TextOverflow.ellipsis),
+                  if (isSharing)
+                    Text(
+                      l10n.broadcastingLocation,
+                      style: const TextStyle(fontSize: 12, color: AppTheme.supplierBlue),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -367,6 +393,7 @@ class _DemandCard extends StatelessWidget {
                 const Icon(Icons.circle, size: 10, color: AppTheme.demandGreen),
                 const SizedBox(width: 8),
                 Expanded(child: Text(l10n.peopleWaiting(waitingCount))),
+                if (latestReport != null) _LiveBadge(label: l10n.liveBadge),
               ],
             ),
             const SizedBox(height: 6),
@@ -403,6 +430,30 @@ class _DemandCard extends StatelessWidget {
   }
 }
 
+class _LiveBadge extends StatelessWidget {
+  const _LiveBadge({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppTheme.supplierBlue.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: AppTheme.supplierBlue,
+          fontWeight: FontWeight.w600,
+          fontSize: 11,
+        ),
+      ),
+    );
+  }
+}
+
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
     required this.notifyMeEnabled,
@@ -425,23 +476,53 @@ class _ActionBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: Row(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: Column(
           children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: onNotifyMeToggled,
-                icon: Icon(notifyMeEnabled ? Icons.notifications_active : Icons.notifications_none),
-                label: Text(l10n.notifyMe),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onNotifyMeToggled,
+                    icon: Icon(notifyMeEnabled ? Icons.notifications_active : Icons.notifications_none),
+                    label: Text(l10n.notifyMe),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: isSharing
+                      ? OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.stopRed,
+                            side: const BorderSide(color: AppTheme.stopRed, width: 1.5),
+                          ),
+                          onPressed: onStopSharing,
+                          icon: const Icon(Icons.stop_circle_outlined),
+                          label: Text(l10n.stopSharing),
+                        )
+                      : FilledButton.icon(
+                          style: FilledButton.styleFrom(backgroundColor: AppTheme.demandGreen),
+                          onPressed: onImOnThisBus,
+                          icon: const Icon(Icons.directions_bus),
+                          label: Text(l10n.imOnThisBus),
+                        ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: isSharing ? onStopSharing : onImOnThisBus,
-                icon: const Icon(Icons.directions_bus),
-                label: Text(isSharing ? l10n.stopSharing : l10n.imOnThisBus),
-              ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.shield_outlined, size: 14, color: Theme.of(context).colorScheme.outline),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    l10n.anonymousTransmissionNote,
+                    style: TextStyle(color: Theme.of(context).colorScheme.outline, fontSize: 11),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
