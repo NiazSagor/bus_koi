@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:uuid/uuid.dart';
 
+import 'package:bus_koi/core/constants/app_constants.dart';
 import 'package:bus_koi/core/utils/name_normalizer.dart';
 import 'package:bus_koi/features/community/data/community_repository.dart';
 import 'package:bus_koi/shared/models/community.dart';
@@ -28,6 +29,7 @@ class MockCommunityRepository implements CommunityRepository {
   final Map<String, Community> _communities = {};
   final Map<String, Map<String, CommunityMember>> _members = {};
   final Map<String, Map<String, LocationReport>> _reports = {};
+  final Map<String, Set<String>> _abuseReporters = {};
 
   final _changes = StreamController<void>.broadcast();
   late final Timer _simTimer;
@@ -118,6 +120,7 @@ class MockCommunityRepository implements CommunityRepository {
         longitude: supplier.lng,
         accuracy: 20 + _random.nextDouble() * 15,
         reportedAt: now,
+        speedMps: 4 + _random.nextDouble() * 6, // ~15-35 km/h, plausible city bus speed
       );
     }
 
@@ -150,6 +153,7 @@ class MockCommunityRepository implements CommunityRepository {
           longitude: current.longitude + jitterLng,
           accuracy: current.accuracy,
           reportedAt: now,
+          speedMps: (3 + _random.nextDouble() * 8).clamp(0, 14),
         );
       }
     }
@@ -199,6 +203,12 @@ class MockCommunityRepository implements CommunityRepository {
       }
     }
     return null;
+  }
+
+  @override
+  Stream<Community?> watchCommunity(String communityId) async* {
+    yield _communities[communityId];
+    yield* _changes.stream.map((_) => _communities[communityId]);
   }
 
   // --- Create / join / leave ---
@@ -327,6 +337,7 @@ class MockCommunityRepository implements CommunityRepository {
     required double latitude,
     required double longitude,
     required double accuracy,
+    double? speedMps,
   }) async {
     final reports = _reports.putIfAbsent(communityId, () => {});
     reports[supplierId] = LocationReport(
@@ -335,6 +346,7 @@ class MockCommunityRepository implements CommunityRepository {
       longitude: longitude,
       accuracy: accuracy,
       reportedAt: DateTime.now(),
+      speedMps: speedMps,
     );
     _touchCommunity(communityId);
     _notify();
@@ -363,6 +375,25 @@ class MockCommunityRepository implements CommunityRepository {
     final reports = _reports[communityId]?.values ?? const <LocationReport>[];
     return reports.where((r) => !r.isStale).toList()
       ..sort((a, b) => b.reportedAt.compareTo(a.reportedAt));
+  }
+
+  // --- Abuse reporting ---
+
+  @override
+  Future<void> reportAbuse({
+    required String communityId,
+    required String reporterId,
+  }) async {
+    final reporters = _abuseReporters.putIfAbsent(communityId, () => {});
+    reporters.add(reporterId);
+
+    if (reporters.length >= AppConstants.abuseReportThreshold) {
+      final community = _communities[communityId];
+      if (community != null) {
+        _communities[communityId] = community.copyWith(status: CommunityStatus.dormant);
+      }
+    }
+    _notify();
   }
 }
 

@@ -7,6 +7,8 @@ import 'package:bus_koi/core/constants/app_constants.dart';
 import 'package:bus_koi/core/services/identity_service.dart';
 import 'package:bus_koi/core/services/location_service.dart';
 import 'package:bus_koi/features/community/data/community_repository.dart';
+import 'package:bus_koi/features/settings/presentation/app_settings_provider.dart';
+import 'package:bus_koi/shared/models/community.dart';
 import 'package:bus_koi/shared/models/community_member.dart';
 import 'package:bus_koi/shared/models/location_report.dart';
 
@@ -22,18 +24,22 @@ class CommunityViewModel extends ChangeNotifier {
     required CommunityRepository repository,
     required IdentityService identity,
     required LocationService locationService,
+    required AppSettingsProvider settings,
   })  : _repository = repository,
         _identity = identity,
-        _locationService = locationService;
+        _locationService = locationService,
+        _settings = settings;
 
   final String communityId;
   final String displayName;
   final CommunityRepository _repository;
   final IdentityService _identity;
   final LocationService _locationService;
+  final AppSettingsProvider _settings;
 
   StreamSubscription<List<CommunityMember>>? _membersSub;
   StreamSubscription<List<LocationReport>>? _reportsSub;
+  StreamSubscription<Community?>? _communitySub;
   StreamSubscription<Position>? _positionSub;
   Timer? _heartbeatTimer;
   Timer? _periodicUploadTimer;
@@ -42,8 +48,21 @@ class CommunityViewModel extends ChangeNotifier {
 
   List<CommunityMember> members = [];
   List<LocationReport> locationReports = [];
+  Community? community;
   LocationSharePhase sharePhase = LocationSharePhase.idle;
   bool disposed = false;
+  bool abuseReported = false;
+
+  /// When this community will go dormant if nothing keeps it active in the
+  /// meantime — null until the community's own record has loaded.
+  DateTime? get dormantAt => community?.lastActiveAt.add(AppConstants.dormantTtl);
+
+  Duration? get timeUntilDormant {
+    final at = dormantAt;
+    if (at == null) return null;
+    final remaining = at.difference(DateTime.now());
+    return remaining.isNegative ? Duration.zero : remaining;
+  }
 
   int get waitingCount =>
       members.where((m) => m.role == MemberRole.waiting).length;
@@ -66,6 +85,10 @@ class CommunityViewModel extends ChangeNotifier {
     });
     _reportsSub = _repository.watchLocationReports(communityId).listen((value) {
       locationReports = value;
+      _safeNotify();
+    });
+    _communitySub = _repository.watchCommunity(communityId).listen((value) {
+      community = value;
       _safeNotify();
     });
 
@@ -104,17 +127,22 @@ class CommunityViewModel extends ChangeNotifier {
     sharePhase = LocationSharePhase.sharing;
     _safeNotify();
 
+    final distanceFilter = _settings.batterySaver
+        ? AppConstants.batterySaverDistanceMeters
+        : AppConstants.locationUpdateDistanceMeters;
+    final uploadInterval = _settings.batterySaver
+        ? AppConstants.batterySaverLocationUpdateInterval
+        : AppConstants.locationUpdateInterval;
+
     _positionSub = _locationService
-        .positionStream(
-          distanceFilterMeters: AppConstants.locationUpdateDistanceMeters,
-        )
+        .positionStream(distanceFilterMeters: distanceFilter)
         .listen((position) {
       _lastKnownPosition = position;
       _maybeSendReport(userId, position);
     });
 
     _periodicUploadTimer = Timer.periodic(
-      AppConstants.locationUpdateInterval,
+      uploadInterval,
       (_) {
         final position = _lastKnownPosition;
         if (position != null) _maybeSendReport(userId, position);
@@ -147,7 +175,16 @@ class CommunityViewModel extends ChangeNotifier {
       latitude: position.latitude,
       longitude: position.longitude,
       accuracy: position.accuracy,
+      speedMps: position.speedAccuracy > 0 ? position.speed : null,
     );
+  }
+
+  Future<void> reportAbuse() async {
+    final userId = _identity.currentUserId;
+    if (userId == null || abuseReported) return;
+    abuseReported = true;
+    _safeNotify();
+    await _repository.reportAbuse(communityId: communityId, reporterId: userId);
   }
 
   Future<void> stopSharing() async {
@@ -173,6 +210,7 @@ class CommunityViewModel extends ChangeNotifier {
     disposed = true;
     _membersSub?.cancel();
     _reportsSub?.cancel();
+    _communitySub?.cancel();
     _positionSub?.cancel();
     _heartbeatTimer?.cancel();
     _periodicUploadTimer?.cancel();

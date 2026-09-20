@@ -15,6 +15,13 @@ class AppConstants {
   static const double locationUpdateDistanceMeters = 30;
   static const Duration supplierReportTtl = Duration(minutes: 3);
 
+  // --- Battery saver (supplier opts into coarser GPS polling) ---
+  static const Duration batterySaverLocationUpdateInterval = Duration(seconds: 45);
+  static const double batterySaverDistanceMeters = 75;
+
+  // --- Abuse reporting ---
+  static const int abuseReportThreshold = 3;
+
   // --- Rate limiting ---
   static const Duration minCommunityCreationGap = Duration(seconds: 30);
   static const Duration minLocationReportGap = Duration(seconds: 10);
@@ -32,4 +39,5 @@ class AppConstants {
   static const String communitiesPath = 'communities';
   static const String membersPath = 'communityMembers';
   static const String locationReportsPath = 'locationReports';
+  static const String abuseReportsPath = 'abuseReports';
 }

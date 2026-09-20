@@ -10,6 +10,7 @@ import 'package:bus_koi/core/services/location_service.dart';
 import 'package:bus_koi/core/theme/app_theme.dart';
 import 'package:bus_koi/features/community/data/community_repository.dart';
 import 'package:bus_koi/features/community/data/mock_community_repository.dart';
+import 'package:bus_koi/features/settings/presentation/app_settings_provider.dart';
 import 'package:bus_koi/features/settings/presentation/locale_provider.dart';
 import 'package:bus_koi/firebase_options.dart';
 
@@ -35,19 +36,24 @@ Future<void> main() async {
   final localeProvider = LocaleProvider();
   await localeProvider.load();
 
-  runApp(BusKoiApp(localeProvider: localeProvider));
+  final appSettings = AppSettingsProvider();
+  await appSettings.load();
+
+  runApp(BusKoiApp(localeProvider: localeProvider, appSettings: appSettings));
 }
 
 class BusKoiApp extends StatelessWidget {
-  const BusKoiApp({super.key, required this.localeProvider});
+  const BusKoiApp({super.key, required this.localeProvider, required this.appSettings});
 
   final LocaleProvider localeProvider;
+  final AppSettingsProvider appSettings;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: localeProvider),
+        ChangeNotifierProvider.value(value: appSettings),
         Provider<IdentityService>(create: (_) => IdentityService()),
         Provider<CommunityRepository>(
           create: (_) =>
@@ -59,8 +65,8 @@ class BusKoiApp extends StatelessWidget {
         Provider<LocationService>(create: (_) => LocationService()),
         Provider<ConnectivityService>(create: (_) => ConnectivityService()),
       ],
-      child: Consumer<LocaleProvider>(
-        builder: (context, locale, _) {
+      child: Consumer2<LocaleProvider, AppSettingsProvider>(
+        builder: (context, locale, settings, _) {
           return MaterialApp(
             title: 'Bus Koi',
             debugShowCheckedModeBanner: false,
@@ -71,6 +77,14 @@ class BusKoiApp extends StatelessWidget {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             initialRoute: AppRouter.home,
             onGenerateRoute: AppRouter.onGenerateRoute,
+            builder: (context, child) {
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(settings.textSize.scaleFactor),
+                ),
+                child: child!,
+              );
+            },
           );
         },
       ),

@@ -12,6 +12,7 @@ import 'package:bus_koi/core/theme/app_theme.dart';
 import 'package:bus_koi/core/utils/relative_time_formatter.dart';
 import 'package:bus_koi/features/community/data/community_repository.dart';
 import 'package:bus_koi/features/community/presentation/community_view_model.dart';
+import 'package:bus_koi/features/settings/presentation/app_settings_provider.dart';
 import 'package:bus_koi/shared/models/location_report.dart';
 
 class CommunityScreenArgs {
@@ -34,6 +35,7 @@ class CommunityScreen extends StatelessWidget {
         repository: context.read<CommunityRepository>(),
         identity: context.read<IdentityService>(),
         locationService: context.read<LocationService>(),
+        settings: context.read<AppSettingsProvider>(),
       )..initialize(),
       child: const _CommunityView(),
     );
@@ -115,6 +117,11 @@ class _CommunityViewState extends State<_CommunityView> {
         ),
         actions: [
           IconButton(
+            icon: Icon(vm.abuseReported ? Icons.flag : Icons.flag_outlined),
+            tooltip: l10n.reportCommunity,
+            onPressed: vm.abuseReported ? null : () => _confirmAndReportAbuse(context, vm),
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             tooltip: l10n.leaveCommunity,
             onPressed: () async {
@@ -133,6 +140,7 @@ class _CommunityViewState extends State<_CommunityView> {
                 _MapArea(
                   latestReport: vm.latestReport,
                   mapController: _mapController,
+                  dataSaver: context.watch<AppSettingsProvider>().dataSaver,
                 ),
                 Positioned(
                   left: 12,
@@ -142,6 +150,7 @@ class _CommunityViewState extends State<_CommunityView> {
                     waitingCount: vm.waitingCount,
                     supplierCount: vm.supplierCount,
                     latestReport: vm.latestReport,
+                    timeUntilDormant: vm.timeUntilDormant,
                   ),
                 ),
                 Positioned(
@@ -229,6 +238,34 @@ class _CommunityViewState extends State<_CommunityView> {
     }
   }
 
+  Future<void> _confirmAndReportAbuse(BuildContext context, CommunityViewModel vm) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.reportCommunity),
+        content: Text(l10n.reportCommunityBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.reportCommunity),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    await vm.reportAbuse();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.reportSubmitted), behavior: SnackBarBehavior.floating),
+    );
+  }
+
   @override
   void dispose() {
     context.read<CommunityViewModel>().leave();
@@ -263,62 +300,93 @@ class _OfflineBanner extends StatelessWidget {
 }
 
 class _MapArea extends StatelessWidget {
-  const _MapArea({required this.latestReport, required this.mapController});
+  const _MapArea({
+    required this.latestReport,
+    required this.mapController,
+    required this.dataSaver,
+  });
 
   final LocationReport? latestReport;
   final MapController mapController;
+  final bool dataSaver;
 
   static const _dhakaFallback = LatLng(23.8103, 90.4125);
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final target = latestReport != null
         ? LatLng(latestReport!.latitude, latestReport!.longitude)
         : _dhakaFallback;
 
-    return FlutterMap(
-      mapController: mapController,
-      options: MapOptions(
-        initialCenter: target,
-        initialZoom: 15,
-        minZoom: AppConstants.mapMinZoom,
-        maxZoom: AppConstants.mapMaxZoom,
-        interactionOptions: const InteractionOptions(
-          flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-        ),
-      ),
+    return Stack(
       children: [
-        TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.byteutility.dev.buskoi.bus_koi',
-        ),
-        if (latestReport != null)
-          CircleLayer(
-            circles: [
-              CircleMarker(
-                point: target,
-                radius: latestReport!.accuracy,
-                useRadiusInMeter: true,
-                color: AppTheme.supplierBlue.withValues(alpha: 0.12),
-                borderColor: AppTheme.supplierBlue.withValues(alpha: 0.4),
-                borderStrokeWidth: 1,
-              ),
-            ],
+        FlutterMap(
+          mapController: mapController,
+          options: MapOptions(
+            initialCenter: target,
+            initialZoom: 15,
+            minZoom: AppConstants.mapMinZoom,
+            maxZoom: AppConstants.mapMaxZoom,
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            interactionOptions: const InteractionOptions(
+              flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+            ),
           ),
-        if (latestReport != null)
-          MarkerLayer(
-            markers: [
-              Marker(
-                point: target,
-                width: 36,
-                height: 36,
-                child: const Icon(
-                  Icons.directions_bus,
-                  color: AppTheme.supplierBlue,
-                  size: 32,
-                ),
+          children: [
+            if (!dataSaver)
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.byteutility.dev.buskoi.bus_koi',
               ),
-            ],
+            if (latestReport != null)
+              CircleLayer(
+                circles: [
+                  CircleMarker(
+                    point: target,
+                    radius: latestReport!.accuracy,
+                    useRadiusInMeter: true,
+                    color: AppTheme.supplierBlue.withValues(alpha: 0.12),
+                    borderColor: AppTheme.supplierBlue.withValues(alpha: 0.4),
+                    borderStrokeWidth: 1,
+                  ),
+                ],
+              ),
+            if (latestReport != null)
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: target,
+                    width: 36,
+                    height: 36,
+                    child: const Icon(
+                      Icons.directions_bus,
+                      color: AppTheme.supplierBlue,
+                      size: 32,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+        if (dataSaver)
+          Positioned(
+            left: 12,
+            right: 100,
+            bottom: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(AppTheme.controlRadius),
+                border: Border.all(color: Theme.of(context).dividerColor),
+              ),
+              child: Text(
+                l10n.mapTilesDisabledNote,
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+            ),
           ),
       ],
     );
@@ -372,11 +440,13 @@ class _DemandCard extends StatelessWidget {
     required this.waitingCount,
     required this.supplierCount,
     required this.latestReport,
+    required this.timeUntilDormant,
   });
 
   final int waitingCount;
   final int supplierCount;
   final LocationReport? latestReport;
+  final Duration? timeUntilDormant;
 
   @override
   Widget build(BuildContext context) {
@@ -409,6 +479,10 @@ class _DemandCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (latestReport!.hasReliableSpeed) ...[
+                    const SizedBox(width: 8),
+                    _SpeedBadge(speedMps: latestReport!.speedMps!),
+                  ],
                 ],
               )
             else
@@ -423,8 +497,48 @@ class _DemandCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
+            if (timeUntilDormant != null &&
+                timeUntilDormant! <= const Duration(minutes: 10)) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(Icons.hourglass_bottom, size: 14, color: AppTheme.warnAmber),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      l10n.communityDormantSoon(
+                        timeUntilDormant!.inMinutes.clamp(1, 99),
+                      ),
+                      style: const TextStyle(color: AppTheme.warnAmber, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SpeedBadge extends StatelessWidget {
+  const _SpeedBadge({required this.speedMps});
+  final double speedMps;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final kmh = (speedMps * 3.6).round();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+      ),
+      child: Text(
+        l10n.movingSpeedKmh(kmh),
+        style: Theme.of(context).textTheme.labelSmall,
       ),
     );
   }

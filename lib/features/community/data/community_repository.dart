@@ -22,6 +22,10 @@ abstract class CommunityRepository {
 
   Future<Community?> findActiveByNormalizedName(String normalizedName);
 
+  /// Live view of a single community's own record (status, lastActiveAt),
+  /// used to show the dormant-TTL countdown.
+  Stream<Community?> watchCommunity(String communityId);
+
   // --- Create / join / leave ---
 
   Future<Community> createCommunity(String displayName);
@@ -60,6 +64,7 @@ abstract class CommunityRepository {
     required double latitude,
     required double longitude,
     required double accuracy,
+    double? speedMps,
   });
 
   Future<void> stopSharing({
@@ -68,6 +73,18 @@ abstract class CommunityRepository {
   });
 
   Stream<List<LocationReport>> watchLocationReports(String communityId);
+
+  // --- Abuse reporting (basic anti-abuse safeguard, see prompt.md §32) ---
+
+  /// Records one anonymous flag against a community from [reporterId]. Once
+  /// [AppConstants.abuseReportThreshold] distinct reporters have flagged it,
+  /// the community is marked dormant so it stops surfacing as active demand.
+  /// Deliberately simple, per prompt.md: "do not attempt sophisticated fraud
+  /// detection".
+  Future<void> reportAbuse({
+    required String communityId,
+    required String reporterId,
+  });
 }
 
 /// The only piece of the app that knows about Firebase Realtime Database.
@@ -82,6 +99,7 @@ class FirebaseCommunityRepository implements CommunityRepository {
       _db.ref(AppConstants.communitiesPath);
   DatabaseReference get _members => _db.ref(AppConstants.membersPath);
   DatabaseReference get _reports => _db.ref(AppConstants.locationReportsPath);
+  DatabaseReference get _abuseReports => _db.ref(AppConstants.abuseReportsPath);
 
   @override
   Stream<List<Community>> watchActiveCommunities() {
@@ -112,6 +130,15 @@ class FirebaseCommunityRepository implements CommunityRepository {
       if (community.status == CommunityStatus.active) return community;
     }
     return null;
+  }
+
+  @override
+  Stream<Community?> watchCommunity(String communityId) {
+    return _communities.child(communityId).onValue.map((event) {
+      final raw = event.snapshot.value;
+      if (raw is! Map) return null;
+      return Community.fromMap(communityId, raw);
+    });
   }
 
   @override
@@ -230,6 +257,7 @@ class FirebaseCommunityRepository implements CommunityRepository {
     required double latitude,
     required double longitude,
     required double accuracy,
+    double? speedMps,
   }) async {
     final report = LocationReport(
       supplierId: supplierId,
@@ -237,6 +265,7 @@ class FirebaseCommunityRepository implements CommunityRepository {
       longitude: longitude,
       accuracy: accuracy,
       reportedAt: DateTime.now(),
+      speedMps: speedMps,
     );
     // Latest-only: overwrite, never append. No movement history is stored.
     await _reports.child(communityId).child(supplierId).set(report.toMap());
@@ -267,5 +296,23 @@ class FirebaseCommunityRepository implements CommunityRepository {
           .toList()
         ..sort((a, b) => b.reportedAt.compareTo(a.reportedAt));
     });
+  }
+
+  @override
+  Future<void> reportAbuse({
+    required String communityId,
+    required String reporterId,
+  }) async {
+    await _abuseReports
+        .child(communityId)
+        .child(reporterId)
+        .set(DateTime.now().millisecondsSinceEpoch);
+
+    final snapshot = await _abuseReports.child(communityId).get();
+    final raw = snapshot.value;
+    final reportCount = raw is Map ? raw.length : 0;
+    if (reportCount >= AppConstants.abuseReportThreshold) {
+      await _communities.child(communityId).update({'status': 'DORMANT'});
+    }
   }
 }

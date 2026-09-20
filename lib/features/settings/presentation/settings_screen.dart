@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'package:bus_koi/core/localization/gen/app_localizations.dart';
 import 'package:bus_koi/core/theme/app_theme.dart';
+import 'package:bus_koi/features/settings/presentation/app_settings_provider.dart';
 import 'package:bus_koi/features/settings/presentation/locale_provider.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -12,6 +13,7 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final localeProvider = context.watch<LocaleProvider>();
+    final settings = context.watch<AppSettingsProvider>();
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings)),
@@ -49,9 +51,52 @@ class SettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _SectionCard(
+            title: l10n.textSize,
+            icon: Icons.format_size,
+            child: SegmentedButton<TextSizeOption>(
+              segments: [
+                ButtonSegment(value: TextSizeOption.small, label: Text(l10n.textSizeSmall)),
+                ButtonSegment(value: TextSizeOption.standard, label: Text(l10n.textSizeStandard)),
+                ButtonSegment(value: TextSizeOption.large, label: Text(l10n.textSizeLarge)),
+              ],
+              selected: {settings.textSize},
+              onSelectionChanged: (selection) => settings.setTextSize(selection.first),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _SectionCard(
+            title: l10n.dataAndBattery,
+            icon: Icons.battery_saver_outlined,
+            child: Column(
+              children: [
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.batterySaverTitle),
+                  subtitle: Text(l10n.batterySaverBody),
+                  value: settings.batterySaver,
+                  onChanged: settings.setBatterySaver,
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.dataSaverTitle),
+                  subtitle: Text(l10n.dataSaverBody),
+                  value: settings.dataSaver,
+                  onChanged: settings.setDataSaver,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _SectionCard(
             title: l10n.about,
             icon: Icons.info_outline,
             child: Text(l10n.aboutBody),
+          ),
+          const SizedBox(height: 16),
+          _SectionCard(
+            title: l10n.communityConductTitle,
+            icon: Icons.groups_outlined,
+            child: Text(l10n.communityConductBody),
           ),
         ],
       ),
